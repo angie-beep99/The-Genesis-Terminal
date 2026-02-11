@@ -1,69 +1,52 @@
-import { type Channel, type LeadSource, type LeadStatus } from "@/types/database";
-
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(amount);
 }
 
-export function formatNumber(value: number): string {
-  return new Intl.NumberFormat("en-US").format(value);
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat('en-US').format(num);
 }
 
 export function formatPercent(value: number): string {
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toFixed(1)}%`;
+  return `${Math.abs(value).toFixed(1)}%`;
 }
 
-export function channelLabel(channel: Channel | LeadSource): string {
-  const labels: Record<string, string> = {
-    google_ads: "Google Ads",
-    meta: "Meta",
-    bing: "Bing",
-    tiktok: "TikTok",
-    seo: "SEO",
-    organic: "Organic",
-  };
-  return labels[channel] || channel;
+export function calcPercentChange(current: number, previous: number): number {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
 }
 
-export function statusColor(status: LeadStatus): string {
-  const colors: Record<LeadStatus, string> = {
-    new: "bg-genesis-muted/30 text-genesis-muted",
-    contacted: "bg-blue-500/20 text-blue-400",
-    qualified: "bg-genesis-gold/20 text-genesis-gold",
-    proposal: "bg-purple-500/20 text-purple-400",
-    converted: "bg-genesis-positive/20 text-genesis-positive",
-    churned: "bg-genesis-negative/20 text-genesis-negative",
-  };
-  return colors[status];
+export function timeAgo(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export function statusLabel(status: LeadStatus): string {
-  const labels: Record<LeadStatus, string> = {
-    new: "New",
-    contacted: "Contacted",
-    qualified: "Qualified",
-    proposal: "Proposal",
-    converted: "Converted",
-    churned: "Churned",
-  };
-  return labels[status];
+export function getMonthString(date?: Date): string {
+  const d = date || new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-export function getDateRange(days: number): { start: string; end: string } {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - days);
-  return {
-    start: start.toISOString().split("T")[0],
-    end: end.toISOString().split("T")[0],
-  };
+export function getPrevMonthString(date?: Date): string {
+  const d = date || new Date();
+  const prev = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-export function cn(...classes: (string | undefined | false)[]): string {
-  return classes.filter(Boolean).join(" ");
+export function cn(...classes: (string | boolean | undefined | null)[]): string {
+  return classes.filter(Boolean).join(' ');
 }

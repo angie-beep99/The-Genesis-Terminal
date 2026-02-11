@@ -1,22 +1,21 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createSupabaseBrowser } from '@/lib/supabase-browser';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = createSupabaseBrowser();
 
-  async function handleLogin(e: React.FormEvent) {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
+    setError('');
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -24,77 +23,54 @@ export default function LoginPage() {
     });
 
     if (authError) {
-      setError("Invalid email or password");
+      setError('Invalid email or password');
       setLoading(false);
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setError("Authentication failed");
-      setLoading(false);
-      return;
-    }
-
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role === "admin") {
-      router.push("/admin/clients");
-    } else {
-      router.push("/terminal");
-    }
+    router.push('/dashboard');
     router.refresh();
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold text-genesis-text tracking-tight">
+    <div className="min-h-screen bg-genesis-bg flex items-center justify-center px-4">
+      <div className="w-full max-w-[400px]">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <h1 className="text-2xl font-semibold tracking-tight text-genesis-text">
             Genesis Terminal
           </h1>
-          <p className="text-genesis-muted mt-2">Partner Login</p>
+          <p className="text-genesis-muted text-sm mt-2">
+            Your marketing performance at a glance
+          </p>
         </div>
 
-        <div className="card">
+        {/* Login Card */}
+        <div className="bg-genesis-card border border-genesis-border rounded-card p-8">
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label htmlFor="email" className="label">
+              <label className="block text-xs font-medium text-genesis-muted uppercase tracking-wider mb-2">
                 Email
               </label>
               <input
-                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input"
+                className="w-full bg-genesis-bg border border-genesis-border rounded-xl px-4 py-3 text-genesis-text text-sm placeholder:text-genesis-muted/50 transition-colors"
                 placeholder="you@company.com"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="label">
+              <label className="block text-xs font-medium text-genesis-muted uppercase tracking-wider mb-2">
                 Password
               </label>
               <input
-                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input"
+                className="w-full bg-genesis-bg border border-genesis-border rounded-xl px-4 py-3 text-genesis-text text-sm placeholder:text-genesis-muted/50 transition-colors"
                 placeholder="Enter your password"
                 required
               />
@@ -104,16 +80,20 @@ export default function LoginPage() {
               <p className="text-genesis-negative text-sm">{error}</p>
             )}
 
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-genesis-gold hover:bg-genesis-gold/90 text-genesis-bg font-medium rounded-xl px-4 py-3 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-genesis-muted text-xs mt-6">
-          Powered by Genesis Partners
+        <p className="text-center text-genesis-muted/50 text-xs mt-8">
+          Genesis Partners &middot; Performance Marketing
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
