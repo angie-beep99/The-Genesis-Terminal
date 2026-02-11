@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-genesis-bg text-genesis-text antialiased;
+  }
+
+  * {
+    @apply border-genesis-border;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-genesis-card rounded-xl border border-genesis-border p-6;
+  }
+
+  .btn-primary {
+    @apply bg-genesis-gold text-genesis-bg font-medium px-6 py-2.5 rounded-lg
+      hover:bg-genesis-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-genesis-card text-genesis-text font-medium px-6 py-2.5 rounded-lg
+      border border-genesis-border hover:bg-genesis-border/50 transition-colors
+      disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .input {
+    @apply w-full bg-genesis-bg border border-genesis-border rounded-lg px-4 py-2.5
+      text-genesis-text placeholder:text-genesis-muted focus:outline-none
+      focus:border-genesis-gold/50 focus:ring-1 focus:ring-genesis-gold/30 transition-colors;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-genesis-muted mb-1.5;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1A1A1A;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2A2A2A;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
