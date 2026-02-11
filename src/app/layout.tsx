@@ -1,26 +1,21 @@
-import type { Metadata } from "next";
-import localFont from "next/font/local";
-import "./globals.css";
-
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
+import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Genesis Terminal",
-  description: "Real-time ad performance analytics by Genesis Partners",
+  title: 'Genesis Terminal',
+  description: 'Your marketing performance at a glance',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} font-sans`}>{children}</body>
+      <body className="min-h-screen bg-genesis-bg text-genesis-text antialiased">
+        {children}
+      </body>
     </html>
   );
 }

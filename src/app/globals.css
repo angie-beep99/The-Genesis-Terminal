@@ -2,70 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-genesis-bg text-genesis-text antialiased;
-  }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-  * {
-    @apply border-genesis-border;
-  }
+:root {
+  --bg: #0A0A0A;
+  --card: #111111;
+  --border: #1A1A1A;
+  --text: #E8E8E8;
+  --muted: #6B6B6B;
+  --gold: #C9A96E;
+  --positive: #4ADE80;
+  --negative: #F87171;
 }
 
-@layer components {
-  .card {
-    @apply bg-genesis-card rounded-xl border border-genesis-border p-6;
-  }
-
-  .btn-primary {
-    @apply bg-genesis-gold text-genesis-bg font-medium px-6 py-2.5 rounded-lg
-      hover:bg-genesis-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .btn-secondary {
-    @apply bg-genesis-card text-genesis-text font-medium px-6 py-2.5 rounded-lg
-      border border-genesis-border hover:bg-genesis-border/50 transition-colors
-      disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .input {
-    @apply w-full bg-genesis-bg border border-genesis-border rounded-lg px-4 py-2.5
-      text-genesis-text placeholder:text-genesis-muted focus:outline-none
-      focus:border-genesis-gold/50 focus:ring-1 focus:ring-genesis-gold/30 transition-colors;
-  }
-
-  .label {
-    @apply block text-sm font-medium text-genesis-muted mb-1.5;
-  }
+* {
+  box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A0A0A;
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1A1A1A;
+  background: var(--border);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2A2A2A;
+  background: var(--muted);
 }
 
-@keyframes pulse-dot {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+/* Recharts overrides */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #1A1A1A;
 }
 
-.pulse-dot {
-  animation: pulse-dot 2s ease-in-out infinite;
+.recharts-text {
+  fill: #6B6B6B;
+  font-size: 12px;
+}
+
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
+/* Input styling */
+input, textarea, select {
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 1px var(--gold);
 }

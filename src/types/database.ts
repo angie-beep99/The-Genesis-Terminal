@@ -1,13 +1,3 @@
-export type Channel = "google_ads" | "meta" | "bing" | "tiktok";
-export type LeadSource = Channel | "seo" | "organic";
-export type LeadStatus =
-  | "new"
-  | "contacted"
-  | "qualified"
-  | "proposal"
-  | "converted"
-  | "churned";
-
 export interface Client {
   id: string;
   company_name: string;
@@ -19,17 +9,27 @@ export interface Client {
 export interface MonthlyMetrics {
   id: string;
   client_id: string;
-  period_start: string;
-  period_end: string;
-  total_spend: number;
+  month: string;
+  money_invested: number;
   total_leads: number;
   qualified_leads: number;
-  cost_per_acquisition: number;
-  spend_change_pct: number;
-  leads_change_pct: number;
-  qualified_change_pct: number;
-  cpa_change_pct: number;
-  created_at: string;
+  revenue_pipeline: number;
+  revenue_closed: number;
+  prev_money_invested: number;
+  prev_leads: number;
+  prev_qualified: number;
+  prev_revenue_pipeline: number;
+  prev_revenue_closed: number;
+}
+
+export interface ChannelData {
+  id: string;
+  client_id: string;
+  month: string;
+  channel: 'google_ads' | 'meta' | 'bing' | 'tiktok';
+  spend: number;
+  leads: number;
+  trend_note: string;
 }
 
 export interface DailyPerformance {
@@ -38,28 +38,17 @@ export interface DailyPerformance {
   date: string;
   spend: number;
   leads: number;
-  channel: Channel;
-}
-
-export interface ChannelBreakdown {
-  id: string;
-  client_id: string;
-  period_start: string;
-  period_end: string;
-  channel: Channel;
-  spend: number;
-  leads: number;
 }
 
 export interface Lead {
   id: string;
   client_id: string;
-  lead_name: string;
+  name: string;
   company: string;
-  source: LeadSource;
-  status: LeadStatus;
+  source: 'google_ads' | 'meta' | 'bing' | 'tiktok' | 'seo' | 'organic' | 'referral';
+  status: 'new' | 'in_conversation' | 'won' | 'lost';
   value: number;
-  notes?: string;
+  notes: string;
   created_at: string;
   updated_at: string;
 }
@@ -67,21 +56,45 @@ export interface Lead {
 export interface PipelineSummary {
   id: string;
   client_id: string;
-  period_start: string;
-  period_end: string;
+  month: string;
   new_leads: number;
-  contacted: number;
-  qualified: number;
-  proposal_sent: number;
-  converted: number;
-  churned: number;
+  in_conversation: number;
+  won: number;
+  lost: number;
 }
 
-export type UserRole = "admin" | "client";
-
-export interface UserProfile {
+export interface Insight {
   id: string;
-  role: UserRole;
-  client_id: string | null;
-  email: string;
+  client_id: string;
+  month: string;
+  insight_text: string;
+  display_order: number;
 }
+
+export type ChannelName = 'google_ads' | 'meta' | 'bing' | 'tiktok';
+export type LeadSource = 'google_ads' | 'meta' | 'bing' | 'tiktok' | 'seo' | 'organic' | 'referral';
+export type LeadStatus = 'new' | 'in_conversation' | 'won' | 'lost';
+
+export const CHANNEL_LABELS: Record<ChannelName, string> = {
+  google_ads: 'Google Ads',
+  meta: 'Meta',
+  bing: 'Bing',
+  tiktok: 'TikTok',
+};
+
+export const SOURCE_LABELS: Record<LeadSource, string> = {
+  google_ads: 'Google Ads',
+  meta: 'Meta',
+  bing: 'Bing',
+  tiktok: 'TikTok',
+  seo: 'SEO',
+  organic: 'Organic',
+  referral: 'Referral',
+};
+
+export const STATUS_LABELS: Record<LeadStatus, string> = {
+  new: 'New',
+  in_conversation: 'In Conversation',
+  won: 'Won',
+  lost: 'Lost',
+};
