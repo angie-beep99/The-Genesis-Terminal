@@ -29,7 +29,9 @@ export default function AdminLoginPage() {
     }
 
     // Verify admin status
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setError('Authentication failed');
       setLoading(false);
@@ -55,17 +57,20 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen bg-genesis-bg flex items-center justify-center px-4">
-      <div className="w-full max-w-[400px]">
+      <div className="w-full max-w-[420px]">
+        {/* Branding */}
         <div className="text-center mb-10">
           <h1 className="text-2xl font-semibold tracking-tight text-genesis-text">
-            Genesis Terminal
+            Genesis Terminal Admin
           </h1>
-          <div className="flex items-center justify-center gap-2 mt-2">
+          <div className="flex items-center justify-center gap-2 mt-3">
             <div className="w-1.5 h-1.5 rounded-full bg-genesis-gold" />
-            <p className="text-genesis-muted text-sm">Admin Access</p>
+            <p className="text-genesis-muted text-sm">Secure Admin Access</p>
+            <div className="w-1.5 h-1.5 rounded-full bg-genesis-gold" />
           </div>
         </div>
 
+        {/* Login Card */}
         <div className="bg-genesis-card border border-genesis-border rounded-card p-8">
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
@@ -76,7 +81,7 @@ export default function AdminLoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-genesis-bg border border-genesis-border rounded-xl px-4 py-3 text-genesis-text text-sm placeholder:text-genesis-muted/50 transition-colors"
+                className="w-full bg-genesis-bg border border-genesis-border rounded-lg px-4 py-2.5 text-genesis-text text-sm placeholder:text-genesis-muted/50 focus:outline-none focus:border-genesis-gold/50 transition-colors"
                 placeholder="admin@genesispartners.com"
                 required
               />
@@ -90,25 +95,31 @@ export default function AdminLoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-genesis-bg border border-genesis-border rounded-xl px-4 py-3 text-genesis-text text-sm placeholder:text-genesis-muted/50 transition-colors"
+                className="w-full bg-genesis-bg border border-genesis-border rounded-lg px-4 py-2.5 text-genesis-text text-sm placeholder:text-genesis-muted/50 focus:outline-none focus:border-genesis-gold/50 transition-colors"
                 placeholder="Enter admin password"
                 required
               />
             </div>
 
             {error && (
-              <p className="text-genesis-negative text-sm">{error}</p>
+              <div className="bg-genesis-negative/10 border border-genesis-negative/30 rounded-lg px-4 py-2.5">
+                <p className="text-genesis-negative text-sm">{error}</p>
+              </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-genesis-gold hover:bg-genesis-gold/90 text-genesis-bg font-medium rounded-xl px-4 py-3 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-genesis-gold hover:bg-genesis-gold-hover text-genesis-bg font-medium rounded-lg px-4 py-2.5 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Verifying...' : 'Sign In'}
             </button>
           </form>
         </div>
+
+        <p className="text-center text-genesis-muted text-xs mt-6">
+          Genesis Partners Internal Panel
+        </p>
       </div>
     </div>
   );

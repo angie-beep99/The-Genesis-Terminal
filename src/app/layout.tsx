@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Genesis Terminal',
-  description: 'Your marketing performance at a glance',
+  description: 'Your growth intelligence platform — performance metrics, lead management, and revenue insights.',
 };
 
 export default function RootLayout({

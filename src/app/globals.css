@@ -2,17 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #0A0A0A;
-  --card: #111111;
-  --border: #1A1A1A;
-  --text: #E8E8E8;
-  --muted: #6B6B6B;
+  --bg: #09090B;
+  --card: #111113;
+  --card-hover: #18181B;
+  --border: #1E1E22;
+  --text: #EAEAEA;
+  --secondary: #71717A;
+  --muted: #52525B;
   --gold: #C9A96E;
-  --positive: #4ADE80;
-  --negative: #F87171;
+  --gold-hover: #D4B47E;
+  --positive: #22C55E;
+  --warning: #EAB308;
+  --negative: #EF4444;
+  --info: #3B82F6;
 }
 
 * {
@@ -31,9 +36,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Tabular numbers for aligned metric displays */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Label styling */
+.label {
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -52,11 +71,11 @@ body {
 /* Recharts overrides */
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: #1A1A1A;
+  stroke: #1E1E22;
 }
 
 .recharts-text {
-  fill: #6B6B6B;
+  fill: #71717A;
   font-size: 12px;
 }
 
@@ -72,4 +91,23 @@ input, textarea, select {
 input:focus, textarea:focus, select:focus {
   border-color: var(--gold) !important;
   box-shadow: 0 0 0 1px var(--gold);
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--card) 25%,
+    var(--card-hover) 50%,
+    var(--card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Kanban drag styles */
+.dragging {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transform: rotate(2deg);
+  z-index: 50;
 }

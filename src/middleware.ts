@@ -39,18 +39,11 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes
-  if (pathname === '/login' || pathname === '/admin' || pathname.startsWith('/api/auth')) {
-    if (user && pathname === '/login') {
-      // Check if admin
-      const { data: adminData } = await supabase
-        .from('admin_users')
-        .select('id')
-        .eq('email', user.email)
-        .single();
+  const publicRoutes = ['/login', '/admin', '/api/auth', '/report/share'];
+  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
 
-      if (adminData) {
-        return NextResponse.redirect(new URL('/admin/clients', request.url));
-      }
+  if (isPublicRoute) {
+    if (user && pathname === '/login') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     if (user && pathname === '/admin') {
