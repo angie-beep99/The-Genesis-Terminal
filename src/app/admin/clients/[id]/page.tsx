@@ -5,37 +5,36 @@ import { useRouter, useParams } from 'next/navigation';
 import { createSupabaseBrowser } from '@/lib/supabase-browser';
 import { getMonthString } from '@/lib/utils';
 import type {
-  Client,
+  Company,
   MonthlyMetrics,
-  ChannelData,
+  Channel,
   DailyPerformance,
   Lead,
-  PipelineSummary,
   Insight,
   ChannelName,
   LeadSource,
   LeadStatus,
+  InsightContext,
 } from '@/types/database';
 import { CHANNEL_LABELS, SOURCE_LABELS, STATUS_LABELS } from '@/types/database';
 
-type Tab = 'metrics' | 'channels' | 'daily' | 'leads' | 'pipeline' | 'insights';
+type Tab = 'metrics' | 'channels' | 'daily' | 'leads' | 'insights';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'metrics', label: 'Key Metrics' },
   { key: 'channels', label: 'Channels' },
   { key: 'daily', label: 'Daily' },
   { key: 'leads', label: 'Leads' },
-  { key: 'pipeline', label: 'Pipeline' },
   { key: 'insights', label: 'Insights' },
 ];
 
 export default function ClientManagePage() {
   const router = useRouter();
   const params = useParams();
-  const clientId = params.id as string;
+  const companyId = params.id as string;
   const supabase = createSupabaseBrowser();
 
-  const [client, setClient] = useState<Client | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [tab, setTab] = useState<Tab>('metrics');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,15 +48,15 @@ export default function ClientManagePage() {
     revenue_pipeline: 0,
     revenue_closed: 0,
     prev_money_invested: 0,
-    prev_leads: 0,
-    prev_qualified: 0,
+    prev_total_leads: 0,
+    prev_qualified_leads: 0,
     prev_revenue_pipeline: 0,
     prev_revenue_closed: 0,
   });
   const [metricsId, setMetricsId] = useState<string | null>(null);
 
   // Channels state
-  const [channels, setChannels] = useState<Partial<ChannelData>[]>([]);
+  const [channels, setChannels] = useState<Partial<Channel>[]>([]);
 
   // Daily performance state
   const [dailyRows, setDailyRows] = useState<Partial<DailyPerformance>[]>([]);
@@ -65,49 +64,38 @@ export default function ClientManagePage() {
   // Leads state
   const [leads, setLeads] = useState<Lead[]>([]);
   const [newLead, setNewLead] = useState({
-    name: '',
-    company: '',
+    lead_name: '',
+    company_name_lead: '',
     source: 'google_ads' as LeadSource,
     status: 'new' as LeadStatus,
     value: 0,
-    notes: '',
   });
-
-  // Pipeline state
-  const [pipeline, setPipeline] = useState<Partial<PipelineSummary>>({
-    new_leads: 0,
-    in_conversation: 0,
-    won: 0,
-    lost: 0,
-  });
-  const [pipelineId, setPipelineId] = useState<string | null>(null);
 
   // Insights state
   const [insights, setInsights] = useState<Partial<Insight>[]>([]);
 
-  const month = getMonthString();
+  const periodStart = getMonthString();
 
   const loadData = useCallback(async () => {
-    const { data: clientData } = await supabase
-      .from('clients')
+    const { data: companyData } = await supabase
+      .from('companies')
       .select('*')
-      .eq('id', clientId)
+      .eq('id', companyId)
       .single();
 
-    if (!clientData) {
+    if (!companyData) {
       router.push('/admin/clients');
       return;
     }
-    setClient(clientData);
+    setCompany(companyData);
 
     // Load all tab data in parallel
-    const [metricsRes, channelsRes, dailyRes, leadsRes, pipelineRes, insightsRes] = await Promise.all([
-      supabase.from('monthly_metrics').select('*').eq('client_id', clientId).eq('month', month).single(),
-      supabase.from('channel_data').select('*').eq('client_id', clientId).eq('month', month).order('spend', { ascending: false }),
-      supabase.from('daily_performance').select('*').eq('client_id', clientId).order('date', { ascending: false }).limit(90),
-      supabase.from('leads').select('*').eq('client_id', clientId).order('created_at', { ascending: false }),
-      supabase.from('pipeline_summary').select('*').eq('client_id', clientId).eq('month', month).single(),
-      supabase.from('insights').select('*').eq('client_id', clientId).eq('month', month).order('display_order', { ascending: true }),
+    const [metricsRes, channelsRes, dailyRes, leadsRes, insightsRes] = await Promise.all([
+      supabase.from('monthly_metrics').select('*').eq('company_id', companyId).eq('period_start', periodStart).single(),
+      supabase.from('channels').select('*').eq('company_id', companyId).eq('period_start', periodStart).order('spend', { ascending: false }),
+      supabase.from('daily_performance').select('*').eq('company_id', companyId).order('date', { ascending: false }).limit(90),
+      supabase.from('leads').select('*').eq('company_id', companyId).eq('is_archived', false).order('created_at', { ascending: false }),
+      supabase.from('insights').select('*').eq('company_id', companyId).order('display_order', { ascending: true }),
     ]);
 
     if (metricsRes.data) {
@@ -121,9 +109,9 @@ export default function ClientManagePage() {
       // Initialize with default channels
       setChannels(
         (['google_ads', 'meta', 'bing', 'tiktok'] as ChannelName[]).map((ch) => ({
-          client_id: clientId,
-          month,
-          channel: ch,
+          company_id: companyId,
+          period_start: periodStart,
+          channel_name: ch,
           spend: 0,
           leads: 0,
           trend_note: '',
@@ -134,23 +122,18 @@ export default function ClientManagePage() {
     if (dailyRes.data) setDailyRows(dailyRes.data);
     if (leadsRes.data) setLeads(leadsRes.data);
 
-    if (pipelineRes.data) {
-      setPipeline(pipelineRes.data);
-      setPipelineId(pipelineRes.data.id);
-    }
-
     if (insightsRes.data && insightsRes.data.length > 0) {
       setInsights(insightsRes.data);
     } else {
       setInsights([
-        { client_id: clientId, month, insight_text: '', display_order: 0 },
-        { client_id: clientId, month, insight_text: '', display_order: 1 },
-        { client_id: clientId, month, insight_text: '', display_order: 2 },
+        { company_id: companyId, insight_text: '', context: 'overview' as InsightContext, display_order: 0 },
+        { company_id: companyId, insight_text: '', context: 'overview' as InsightContext, display_order: 1 },
+        { company_id: companyId, insight_text: '', context: 'overview' as InsightContext, display_order: 2 },
       ]);
     }
 
     setLoading(false);
-  }, [clientId, month, router, supabase]);
+  }, [companyId, periodStart, router, supabase]);
 
   useEffect(() => {
     loadData();
@@ -164,7 +147,7 @@ export default function ClientManagePage() {
   // Save functions for each tab
   const saveMetrics = async () => {
     setSaving(true);
-    const payload = { ...metrics, client_id: clientId, month };
+    const payload = { ...metrics, company_id: companyId, period_start: periodStart };
 
     if (metricsId) {
       await supabase.from('monthly_metrics').update(payload).eq('id', metricsId);
@@ -180,20 +163,20 @@ export default function ClientManagePage() {
     setSaving(true);
     for (const ch of channels) {
       const payload = {
-        client_id: clientId,
-        month,
-        channel: ch.channel,
+        company_id: companyId,
+        period_start: periodStart,
+        channel_name: ch.channel_name,
         spend: ch.spend || 0,
         leads: ch.leads || 0,
         trend_note: ch.trend_note || '',
       };
 
       if (ch.id) {
-        await supabase.from('channel_data').update(payload).eq('id', ch.id);
+        await supabase.from('channels').update(payload).eq('id', ch.id);
       } else {
-        const { data } = await supabase.from('channel_data').upsert(payload, { onConflict: 'client_id,month,channel' }).select().single();
+        const { data } = await supabase.from('channels').upsert(payload, { onConflict: 'company_id,period_start,channel_name' }).select().single();
         if (data) {
-          setChannels((prev) => prev.map((c) => (c.channel === ch.channel ? { ...c, id: data.id } : c)));
+          setChannels((prev) => prev.map((c) => (c.channel_name === ch.channel_name ? { ...c, id: data.id } : c)));
         }
       }
     }
@@ -205,7 +188,7 @@ export default function ClientManagePage() {
     const today = new Date().toISOString().split('T')[0];
     const { data } = await supabase
       .from('daily_performance')
-      .upsert({ client_id: clientId, date: today, spend: 0, leads: 0 }, { onConflict: 'client_id,date' })
+      .upsert({ company_id: companyId, date: today, spend: 0, leads: 0 }, { onConflict: 'company_id,date' })
       .select()
       .single();
     if (data) {
@@ -219,53 +202,40 @@ export default function ClientManagePage() {
   };
 
   const addLead = async () => {
-    if (!newLead.name) return;
+    if (!newLead.lead_name) return;
     setSaving(true);
     const { data } = await supabase
       .from('leads')
-      .insert({ ...newLead, client_id: clientId })
+      .insert({ ...newLead, company_id: companyId })
       .select()
       .single();
     if (data) {
       setLeads((prev) => [data, ...prev]);
-      setNewLead({ name: '', company: '', source: 'google_ads', status: 'new', value: 0, notes: '' });
+      setNewLead({ lead_name: '', company_name_lead: '', source: 'google_ads', status: 'new', value: 0 });
     }
     setSaving(false);
     showMessage('Lead added');
   };
 
-  const deleteLead = async (id: string) => {
-    await supabase.from('leads').delete().eq('id', id);
+  const archiveLead = async (id: string) => {
+    await supabase.from('leads').update({ is_archived: true }).eq('id', id);
     setLeads((prev) => prev.filter((l) => l.id !== id));
-  };
-
-  const savePipeline = async () => {
-    setSaving(true);
-    const payload = { ...pipeline, client_id: clientId, month };
-
-    if (pipelineId) {
-      await supabase.from('pipeline_summary').update(payload).eq('id', pipelineId);
-    } else {
-      const { data } = await supabase.from('pipeline_summary').insert(payload).select().single();
-      if (data) setPipelineId(data.id);
-    }
-    setSaving(false);
-    showMessage('Pipeline saved');
   };
 
   const saveInsights = async () => {
     setSaving(true);
-    // Delete existing and re-insert
-    await supabase.from('insights').delete().eq('client_id', clientId).eq('month', month);
+    // Delete existing overview insights for this company and re-insert
+    await supabase.from('insights').delete().eq('company_id', companyId).eq('context', 'overview');
 
     const validInsights = insights.filter((i) => i.insight_text?.trim());
     if (validInsights.length > 0) {
       await supabase.from('insights').insert(
         validInsights.map((i, idx) => ({
-          client_id: clientId,
-          month,
+          company_id: companyId,
           insight_text: i.insight_text!,
+          context: (i.context || 'overview') as InsightContext,
           display_order: idx,
+          posted_date: new Date().toISOString().split('T')[0],
         }))
       );
     }
@@ -297,7 +267,7 @@ export default function ClientManagePage() {
             </button>
             <span className="text-genesis-border">/</span>
             <span className="text-[15px] font-semibold text-genesis-text">
-              {client?.company_name}
+              {company?.company_name}
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -305,7 +275,7 @@ export default function ClientManagePage() {
               <span className="text-xs text-genesis-positive animate-fade-in">{message}</span>
             )}
             <button
-              onClick={() => window.open(`/dashboard?preview=${clientId}`, '_blank')}
+              onClick={() => window.open(`/dashboard?preview=${companyId}`, '_blank')}
               className="text-xs text-genesis-gold border border-genesis-gold/30 rounded-lg px-3 py-1.5 hover:bg-genesis-gold/10 transition-all"
             >
               View as Client
@@ -370,11 +340,11 @@ export default function ClientManagePage() {
                 </div>
                 <div>
                   <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Total Leads</label>
-                  <input type="number" value={metrics.prev_leads || ''} onChange={(e) => setMetrics({ ...metrics, prev_leads: parseInt(e.target.value) || 0 })} className={inputClass} />
+                  <input type="number" value={metrics.prev_total_leads || ''} onChange={(e) => setMetrics({ ...metrics, prev_total_leads: parseInt(e.target.value) || 0 })} className={inputClass} />
                 </div>
                 <div>
                   <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Qualified Leads</label>
-                  <input type="number" value={metrics.prev_qualified || ''} onChange={(e) => setMetrics({ ...metrics, prev_qualified: parseInt(e.target.value) || 0 })} className={inputClass} />
+                  <input type="number" value={metrics.prev_qualified_leads || ''} onChange={(e) => setMetrics({ ...metrics, prev_qualified_leads: parseInt(e.target.value) || 0 })} className={inputClass} />
                 </div>
                 <div>
                   <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Revenue Pipeline ($)</label>
@@ -396,9 +366,9 @@ export default function ClientManagePage() {
           {tab === 'channels' && (
             <div className="space-y-6">
               {channels.map((ch, idx) => (
-                <div key={ch.channel || idx} className="p-5 bg-genesis-bg rounded-xl border border-genesis-border">
+                <div key={ch.channel_name || idx} className="p-5 bg-genesis-bg rounded-xl border border-genesis-border">
                   <p className="text-sm font-medium text-genesis-text mb-4">
-                    {CHANNEL_LABELS[ch.channel as ChannelName] || ch.channel}
+                    {CHANNEL_LABELS[ch.channel_name as ChannelName] || ch.channel_name}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
@@ -503,12 +473,12 @@ export default function ClientManagePage() {
               <h3 className="text-base font-semibold text-genesis-text mb-4">Add Lead</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-genesis-bg rounded-xl border border-genesis-border">
                 <div>
-                  <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Name</label>
-                  <input type="text" value={newLead.name} onChange={(e) => setNewLead({ ...newLead, name: e.target.value })} className={inputClass} placeholder="Lead name" />
+                  <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Lead Name</label>
+                  <input type="text" value={newLead.lead_name} onChange={(e) => setNewLead({ ...newLead, lead_name: e.target.value })} className={inputClass} placeholder="Lead name" />
                 </div>
                 <div>
                   <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Company</label>
-                  <input type="text" value={newLead.company} onChange={(e) => setNewLead({ ...newLead, company: e.target.value })} className={inputClass} placeholder="Company name" />
+                  <input type="text" value={newLead.company_name_lead} onChange={(e) => setNewLead({ ...newLead, company_name_lead: e.target.value })} className={inputClass} placeholder="Company name" />
                 </div>
                 <div>
                   <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Source</label>
@@ -530,12 +500,8 @@ export default function ClientManagePage() {
                   <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Value ($)</label>
                   <input type="number" value={newLead.value || ''} onChange={(e) => setNewLead({ ...newLead, value: parseFloat(e.target.value) || 0 })} className={inputClass} />
                 </div>
-                <div>
-                  <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Notes</label>
-                  <input type="text" value={newLead.notes} onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })} className={inputClass} placeholder="Optional notes" />
-                </div>
                 <div className="sm:col-span-2">
-                  <button onClick={addLead} disabled={saving || !newLead.name} className="bg-genesis-gold hover:bg-genesis-gold/90 text-genesis-bg font-medium rounded-xl px-6 py-3 text-sm transition-all disabled:opacity-50">
+                  <button onClick={addLead} disabled={saving || !newLead.lead_name} className="bg-genesis-gold hover:bg-genesis-gold/90 text-genesis-bg font-medium rounded-xl px-6 py-3 text-sm transition-all disabled:opacity-50">
                     {saving ? 'Adding...' : 'Add Lead'}
                   </button>
                 </div>
@@ -546,46 +512,17 @@ export default function ClientManagePage() {
                 {leads.map((lead) => (
                   <div key={lead.id} className="flex items-center justify-between p-4 bg-genesis-bg rounded-xl border border-genesis-border">
                     <div>
-                      <p className="text-sm font-medium text-genesis-text">{lead.name}</p>
+                      <p className="text-sm font-medium text-genesis-text">{lead.lead_name}</p>
                       <p className="text-xs text-genesis-muted">
-                        {SOURCE_LABELS[lead.source]} &middot; {STATUS_LABELS[lead.status]} &middot; ${lead.value.toLocaleString()}
+                        {lead.source ? SOURCE_LABELS[lead.source] : 'Unknown'} &middot; {STATUS_LABELS[lead.status]} &middot; ${lead.value.toLocaleString()}
                       </p>
                     </div>
-                    <button onClick={() => deleteLead(lead.id)} className="text-xs text-genesis-negative/70 hover:text-genesis-negative transition-colors">
-                      Remove
+                    <button onClick={() => archiveLead(lead.id)} className="text-xs text-genesis-negative/70 hover:text-genesis-negative transition-colors">
+                      Archive
                     </button>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* ==================== PIPELINE TAB ==================== */}
-          {tab === 'pipeline' && (
-            <div className="space-y-6">
-              <h3 className="text-base font-semibold text-genesis-text mb-4">Pipeline Summary</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">New Leads</label>
-                  <input type="number" value={pipeline.new_leads || ''} onChange={(e) => setPipeline({ ...pipeline, new_leads: parseInt(e.target.value) || 0 })} className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">In Conversation</label>
-                  <input type="number" value={pipeline.in_conversation || ''} onChange={(e) => setPipeline({ ...pipeline, in_conversation: parseInt(e.target.value) || 0 })} className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Won</label>
-                  <input type="number" value={pipeline.won || ''} onChange={(e) => setPipeline({ ...pipeline, won: parseInt(e.target.value) || 0 })} className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-xs text-genesis-muted uppercase tracking-wider mb-2">Lost</label>
-                  <input type="number" value={pipeline.lost || ''} onChange={(e) => setPipeline({ ...pipeline, lost: parseInt(e.target.value) || 0 })} className={inputClass} />
-                </div>
-              </div>
-
-              <button onClick={savePipeline} disabled={saving} className="bg-genesis-gold hover:bg-genesis-gold/90 text-genesis-bg font-medium rounded-xl px-6 py-3 text-sm transition-all disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Pipeline'}
-              </button>
             </div>
           )}
 
@@ -601,7 +538,7 @@ export default function ClientManagePage() {
                   onClick={() =>
                     setInsights((prev) => [
                       ...prev,
-                      { client_id: clientId, month, insight_text: '', display_order: prev.length },
+                      { company_id: companyId, insight_text: '', context: 'overview' as InsightContext, display_order: prev.length },
                     ])
                   }
                   className="text-sm text-genesis-gold hover:underline"
@@ -612,6 +549,23 @@ export default function ClientManagePage() {
 
               {insights.map((insight, idx) => (
                 <div key={idx} className="relative">
+                  <div className="mb-2">
+                    <select
+                      value={insight.context || 'overview'}
+                      onChange={(e) => {
+                        setInsights((prev) =>
+                          prev.map((ins, i) => (i === idx ? { ...ins, context: e.target.value as InsightContext } : ins))
+                        );
+                      }}
+                      className="bg-genesis-bg border border-genesis-border rounded-lg px-3 py-1.5 text-genesis-text text-xs"
+                    >
+                      <option value="overview">Overview</option>
+                      <option value="google_ads">Google Ads</option>
+                      <option value="meta">Meta</option>
+                      <option value="bing">Bing</option>
+                      <option value="tiktok">TikTok</option>
+                    </select>
+                  </div>
                   <textarea
                     value={insight.insight_text || ''}
                     onChange={(e) => {
